@@ -199,15 +199,14 @@ class GeneticAgent(CaptureAgent):
         enemyDistances.append(self.getMazeDistance(sucPos,successor.getAgentPosition(x)))
         for z in tspots:
           tempSpots.append(self.getMazeDistance(z, successor.getAgentPosition(x)))
-        tspots.append(min(tempSpots))
-      enemyDistToDot=min(tspots)
+      enemyDistToDot=min(tempSpots)
       sum = sum + enemyDistToDot * self.PreventingWeight
       #seperation calculations
-      team=self.getTeam()
+      team=self.getTeam(gameState)
       teamDistance=self.getMazeDistance(successor.getAgentPosition(team[0]),successor.getAgentPosition(team[1]))
       sum = sum + teamDistance
       #pathes calculation
-      numMoves=len(successor(self.getLegalActions(self.index)))
+      numMoves=len(successor.getLegalActions(self.index))
       sum = sum + numMoves * self.PathesWeight
       #fleeing and attacking ghosts
       minEnemyDistance = min(enemyDistances)
@@ -215,21 +214,21 @@ class GeneticAgent(CaptureAgent):
       flee = 0
       opponents = self.getOpponents(successor)
       
-      if successor.agentStates[opponents[0].index].scaredTimer != 0 or successor.agentStates[opponents[1].index].scaredTimer != 0: 
+      if successor.getAgentState(opponents[0]).scaredTimer != 0 or successor.getAgentState(opponents[1]).scaredTimer != 0: 
         attack = 10/minEnemyDistance
       else:
         flee = minEnemyDistance
-      sum = sum + (attack * self.EatingGhost) + (flee * self.RuningGhost)
+      sum = sum + (attack * self.EatingGhost) + (flee * self.RunningGhost)
       #border calculations  
-      borderDist=abs(sucPos[0]-len(successor.getwalls()[0])/2)
+      borderDist=abs(sucPos[0]-len(successor.getWalls()[0])/2)
       sum = sum + borderDist * self.BorderWeight
-      op1d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[0].index))
-      op2d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[1].index)) 
+      op1d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[0]))
+      op2d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[1])) 
       if  op1d > op2d :
-          if self.getAgentStates(opponents[1].index).isPacman:
+          if successor.getAgentState(opponents[1]).isPacman:
               sum = sum + 10/(op1d * self.PacmanHunterWeight)
       else: 
-          if self.getAgentStates(opponents[0].index).isPacman: 
+          if successor.getAgentState(opponents[0]).isPacman: 
               sum = sum + 10/(op2d * self.PacmanHunterWeight)
           
       
