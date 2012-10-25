@@ -349,7 +349,7 @@ class CaptureRules:
     initState = GameState()
     initState.initialize( layout, len(agents) )
     starter = random.randint(0,1)
-    print('%s team starts' % ['Red', 'Blue'][starter])
+#    print('%s team starts' % ['Red', 'Blue'][starter])
     game = Game(agents, display, self, startingIndex=starter, muteAgents=muteAgents, catchExceptions=catchExceptions)
     game.state = initState
     game.length = length
@@ -819,8 +819,8 @@ def evalGame(value1, value2):
         rules = CaptureRules()
         import textDisplay
         gameDisplay = textDisplay.NullGraphics()
-        rules.quiet = True#options['length']
-        g = rules.newGame( options['layout'], agents, options['display'], 1200, False, False )
+        rules.quiet = True#options['length'] options['display']
+        g = rules.newGame( options['layout'], agents,options['display'], 1200, False, False )
         g.run()
         if g.state.getRedFood().count() == MIN_FOOD:
             return 0
@@ -902,7 +902,7 @@ def randGene():
 population = 16
 genes = []
 for i in range(0,population):
-    genes.append((0,randGene(),`i`))
+    genes.append((0,randGene(),`i`,0))
 
 def compete(gene1,gene2):
     return evalGame(gene1,gene2)
@@ -919,7 +919,7 @@ def Genetic_Algorithm(genes):
         if genes[population-competition-1][0]:
             for i in range(population/2-1,-1,-1):
                 if i!=competition and not genes[i][0]:
-                    genes[i] = (0,genes[population-competition-1][1],genes[population-competition-1][2])
+                    genes[i] = (0,)+genes[population-competition-1][1:]
                     break
     genes = genes[0:population/2]
     for competition in range(0,population/4):
@@ -931,7 +931,7 @@ def Genetic_Algorithm(genes):
         if genes[population/2-competition-1][0]:
             for i in range(population/4-1,-1,-1):
                 if i!=competition and not genes[i][0]:
-                    genes[i] = (0,genes[population/2-competition-1][1],genes[population/2-competition-1][2])
+                    genes[i] = (0,)+genes[population/2-competition-1][1:]
                     break
     genes = genes[0:population/4]
     for competition in range(0,population/8):
@@ -940,8 +940,8 @@ def Genetic_Algorithm(genes):
             tempgene = genes[competition]
             genes[competition] = genes[population/4-competition-1]
             genes[population/4-competition-1] = tempgene
-        genes[competition] = (1,genes[competition][1],genes[competition][2])
-        genes[population/4-competition-1] = (0,genes[population/4-competition-1][1],genes[population/4-competition-1][2])
+        genes[competition] = (1,)+genes[competition][1:3]+(genes[competition][3]+1,)
+        genes[population/4-competition-1] = (0,)+genes[population/4-competition-1][1:3]+(genes[population/4-competition-1][3]+1,)
     tomake = population/4*3
     while tomake>0:
         for i in range(0,population/4-1):
@@ -949,20 +949,15 @@ def Genetic_Algorithm(genes):
                 if tomake<=0:
                     break
                 children = crossover(genes[i][1],genes[j][1])
-                genes.append((0,children[0],"("+genes[i][2]+" "+genes[j][2]+")"))
-                genes.append((0,children[1],"("+genes[j][2]+" "+genes[i][2]+")"))
+                genes.append((0,children[0],genes[i][2],0))
+                genes.append((0,children[1],genes[j][2],0))
                 tomake-=2
             if tomake<=0:
                 break
     return genes
 
-for i in range(0,population):
-    print(genes[i][2])
-genes = Genetic_Algorithm(genes)
-print("")
-for i in range(0,population):
-    print(genes[i][2])
-genes = Genetic_Algorithm(genes)
-print("")
-for i in range(0,population):
-    print(genes[i][2])
+maxwins = 0
+while maxwins<10:
+    genes = Genetic_Algorithm(genes)
+    maxwins = max(genes[0][3],max(genes[1][3],max(genes[2][3],genes[3][3])))
+    print(maxwins)
