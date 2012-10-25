@@ -157,9 +157,9 @@ class GeneticAgent(CaptureAgent):
       score = successor.getScore()
       print("score :", score)
       if self.red: 
-          sum = score * self.ScoreWeight
+          sum = score * self.ScoreWeight *10
       else:
-          sum = -score * self.ScoreWeight
+          sum = -score * self.ScoreWeight * 10
       #food calculations
       newFood = self.getFood(successor)
       spots = []
@@ -228,7 +228,7 @@ class GeneticAgent(CaptureAgent):
       elif successor.getAgentState(self.index).isPacman:
         flee = minEnemyDistance
       print("attack is: ", attack, " flee is: ", flee)
-      sum = sum + (attack * self.EatingGhost) - (flee * self.RunningGhost)
+      sum = sum - (attack * self.EatingGhost) + (flee * self.RunningGhost)
       #border calculations  
       borderDist=abs(sucPos[0]-len(successor.getWalls()[0])/2)
       #sum = sum + borderDist * self.BorderWeight
