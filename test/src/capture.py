@@ -813,14 +813,16 @@ def runGames( layout, agents, display, length, numGames, record, numTraining, re
     print 'Record:       ', ', '.join([('Blue', 'Tie', 'Red')[max(0, min(2, 1 + s))] for s in scores])
   return games
 
-def evalGame(value1, value2):
+def evalGame(value1, value2,display):
         """first value is red"""
         agents=[GeneticAgent(0,0.1,value1[0:11]),GeneticAgent(1,0.1,value2[0:11]),GeneticAgent(2,0.1,value1[11:22]),GeneticAgent(3,0.1,value2[11:22])]
         rules = CaptureRules()
         import textDisplay
         gameDisplay = textDisplay.NullGraphics()
         rules.quiet = True#options['length'] options['display']
-        g = rules.newGame( options['layout'], agents,options['display'], 1200, False, False )
+        if display:
+            gameDisplay = options['display']
+        g = rules.newGame( options['layout'], agents,gameDisplay, 1200, False, False )
         g.run()
         if g.state.getRedFood().count() == MIN_FOOD:
             return 0
@@ -904,14 +906,14 @@ genes = []
 for i in range(0,population):
     genes.append((0,randGene(),`i`,0))
 
-def compete(gene1,gene2):
-    return evalGame(gene1,gene2)
+def compete(gene1,gene2,display):
+    return evalGame(gene1,gene2,display)
 
-def Genetic_Algorithm(genes):
+def Genetic_Algorithm(genes,display):
     population = len(genes)
     random.shuffle(genes)
     for competition in range(0,population/2):
-        winner = compete(genes[competition][1],genes[population-competition-1][1])
+        winner = compete(genes[competition][1],genes[population-competition-1][1],display)
         if winner:
             tempgene = genes[competition]
             genes[competition] = genes[population-competition-1]
@@ -923,7 +925,7 @@ def Genetic_Algorithm(genes):
                     break
     genes = genes[0:population/2]
     for competition in range(0,population/4):
-        winner = compete(genes[competition][1],genes[population/2-competition-1][1])
+        winner = compete(genes[competition][1],genes[population/2-competition-1][1],display)
         if winner:
             tempgene = genes[competition]
             genes[competition] = genes[population/2-competition-1]
@@ -935,7 +937,7 @@ def Genetic_Algorithm(genes):
                     break
     genes = genes[0:population/4]
     for competition in range(0,population/8):
-        winner = compete(genes[competition][1],genes[population/4-competition-1][1])
+        winner = compete(genes[competition][1],genes[population/4-competition-1][1],display)
         if winner:
             tempgene = genes[competition]
             genes[competition] = genes[population/4-competition-1]
@@ -957,7 +959,9 @@ def Genetic_Algorithm(genes):
     return genes
 
 maxwins = 0
+generation = 0
 while maxwins<10:
-    genes = Genetic_Algorithm(genes)
+    genes = Genetic_Algorithm(genes,generation>10)
     maxwins = max(genes[0][3],max(genes[1][3],max(genes[2][3],genes[3][3])))
     print(maxwins)
+    generation+=1
