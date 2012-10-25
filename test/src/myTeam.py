@@ -237,10 +237,12 @@ class GeneticAgent(CaptureAgent):
       if  op1d > op2d :
           if successor.getAgentState(opponents[1]).isPacman:
               print("op1d is: ", op1d)
-              sum = sum  - (op1d * self.PacmanHunterWeight)
+              if successor.getAgentState(self.index).isPacman:
+                  sum = sum  - (op1d * self.PacmanHunterWeight)
       else: 
           if successor.getAgentState(opponents[0]).isPacman: 
-              sum = sum - (op2d * self.PacmanHunterWeight)
+              if successor.getAgentState(self.index).isPacman:
+                  sum = sum - (op2d * self.PacmanHunterWeight)
               print("op2d is: ", op2d)
       print("sum is: ", sum)
       return sum
