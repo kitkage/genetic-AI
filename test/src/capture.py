@@ -619,7 +619,7 @@ def readCommand( argv ):
   parser.add_option('-z', '--zoom', type='float', dest='zoom',
                     help=default('Zoom in the graphics'), default=1)
   parser.add_option('-i', '--time', type='int', dest='time',
-                    help=default('TIME limit of a game in moves'), default=1200, metavar='TIME')
+                    help=default('TIME limit of a game in moves'), default=17, metavar='TIME')
   parser.add_option('-n', '--numGames', type='int',
                     help=default('Number of games to play'), default=1)
   parser.add_option('-f', '--fixRandomSeed', action='store_true',
@@ -814,22 +814,22 @@ def runGames( layout, agents, display, length, numGames, record, numTraining, re
   return games
 
 def evalGame(value1, value2):
-     """first value is red"""
-     agents=[GeneticAgent(0,0.1,value1[0:11]),GeneticAgent(1,0.1,value2[0:11]),GeneticAgent(2,0.1,value1[11:22]),GeneticAgent(3,0.1,value2[11:22])]
-     rules = CaptureRules()
-     import textDisplay
-     gameDisplay = textDisplay.NullGraphics()
-     rules.quiet = True
-     g = rules.newGame( options['layout'], agents, gameDisplay, options['length'], options['muteAgents'], options['catchExceptions'] )
-     g.run()
-     if g.state.getRedFood().count() == MIN_FOOD:
-          return 0
-     elif g.state.getBlueFood().count() == MIN_FOOD:
-          return 1
-     elif g.state.data.score < 0:
-          return 1
-     else:
-          return 0
+        """first value is red"""
+        agents=[GeneticAgent(0,0.1,value1[0:11]),GeneticAgent(1,0.1,value2[0:11]),GeneticAgent(2,0.1,value1[11:22]),GeneticAgent(3,0.1,value2[11:22])]
+        rules = CaptureRules()
+        import textDisplay
+        gameDisplay = textDisplay.NullGraphics()
+        rules.quiet = True
+        g = rules.newGame( options['layout'], agents, gameDisplay, options['length'], False, False )
+        g.run()
+        if g.state.getRedFood().count() == MIN_FOOD:
+            return 0
+        elif g.state.getBlueFood().count() == MIN_FOOD:
+            return 1
+        elif g.state.data.score < 0:
+            return 1
+        else:
+            return 0
      
   
 if __name__ == '__main__':
@@ -845,3 +845,124 @@ if __name__ == '__main__':
   """
   options = readCommand( sys.argv[1:] ) # Get game components based on input
   runGames(**options)
+
+
+
+
+
+geneLength = 22
+probs = [0.1544200202,0.1576537777,0.1512525920,0.1363637389,0.1155293991,0.09197790668,0.06881319473,0.04837899685,0.03196234444,0.01984342642,0.01157685408,0.006346873535,0.003269821209,0.001583005700,0.0007201693720,0.0003078788466]
+def mutate():
+    t = random.random()
+    for i in range(0,16):
+        t-=probs[i]
+        if t<0:
+            return i/16.+random.random()/16
+    return 1
+
+def crossover(gene1,gene2):
+    child1 = [];
+    child2 = [];
+    for i in range(0,len(gene1)):
+        if random.random()<1./len(gene1):
+            child1.append(mutate())
+            child2.append(mutate())
+        elif random.random()<0.5:
+            child1.append(gene1[i])
+            child2.append(gene2[i])
+        else:
+            child1.append(gene2[i])
+            child2.append(gene1[i])
+    s1 = sum(child1)
+    s2 = sum(child2)
+    if s1==0:
+        child1 = [1]*len(gene1)
+        s1 = len(gene1)
+    if s2==0:
+        child2 = [1]*len(gene2)
+        s2 = len(gene2)
+    for i in range(0,len(gene1)):
+        child1[i]/=s1
+        child2[i]/=s2
+    return child1,child2
+
+def randGene():
+    gene = [];
+    for i in range(0,geneLength):
+        gene.append(mutate())
+    s = sum(gene)
+    if s==0:
+        gene = [1]*geneLength
+        s = geneLength
+    for i in range(0,geneLength):
+        gene[i]/=s
+        gene[i]/=s
+    return gene
+
+population = 16
+genes = []
+for i in range(0,population):
+    genes.append((0,randGene(),`i`))
+
+def compete(gene1,gene2):
+    return evalGame(gene1,gene2)
+
+def Genetic_Algorithm(genes):
+    population = len(genes)
+    random.shuffle(genes)
+    for competition in range(0,population/2):
+        winner = compete(genes[competition][1],genes[population-competition-1][1])
+        if winner:
+            tempgene = genes[competition]
+            genes[competition] = genes[population-competition-1]
+            genes[population-competition-1] = tempgene
+        if genes[population-competition-1][0]:
+            for i in range(population/2-1,-1,-1):
+                if i!=competition and not genes[i][0]:
+                    genes[i] = (0,genes[population-competition-1][1],genes[population-competition-1][2])
+                    break
+    genes = genes[0:population/2]
+    for competition in range(0,population/4):
+        winner = compete(genes[competition][1],genes[population/2-competition-1][1])
+        if winner:
+            tempgene = genes[competition]
+            genes[competition] = genes[population/2-competition-1]
+            genes[population/2-competition-1] = tempgene
+        if genes[population/2-competition-1][0]:
+            for i in range(population/4-1,-1,-1):
+                if i!=competition and not genes[i][0]:
+                    genes[i] = (0,genes[population/2-competition-1][1],genes[population/2-competition-1][2])
+                    break
+    genes = genes[0:population/4]
+    for competition in range(0,population/8):
+        winner = compete(genes[competition][1],genes[population/4-competition-1][1])
+        if winner:
+            tempgene = genes[competition]
+            genes[competition] = genes[population/4-competition-1]
+            genes[population/4-competition-1] = tempgene
+        genes[competition] = (1,genes[competition][1],genes[competition][2])
+        genes[population/4-competition-1] = (0,genes[population/4-competition-1][1],genes[population/4-competition-1][2])
+    tomake = population/4*3
+    while tomake>0:
+        for i in range(0,population/4-1):
+            for j in range(i+1,population/4):
+                if tomake<=0:
+                    break
+                children = crossover(genes[i][1],genes[j][1])
+                genes.append((0,children[0],"("+genes[i][2]+" "+genes[j][2]+")"))
+                genes.append((0,children[1],"("+genes[j][2]+" "+genes[i][2]+")"))
+                tomake-=2
+            if tomake<=0:
+                break
+    return genes
+
+for i in range(0,population):
+    print(genes[i][2])
+genes = Genetic_Algorithm(genes)
+print("")
+for i in range(0,population):
+    print(genes[i][2])
+genes = Genetic_Algorithm(genes)
+print("")
+for i in range(0,population):
+    print(genes[i][2])

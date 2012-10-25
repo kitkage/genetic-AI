@@ -87,7 +87,7 @@ class DummyAgent(CaptureAgent):
 
 class GeneticAgent(CaptureAgent):
   
-  def __init__( self, index, timeForComputing = .1, weightList ):
+  def __init__( self, index, timeForComputing, weightList ):
     """
     Lists several variables you can query:
     self.index = index for this agent
@@ -119,17 +119,17 @@ class GeneticAgent(CaptureAgent):
 
     # Access to the graphics
     self.display = None
-    self.FoodHuntingWeight = weightList[1]
-    self.ScoreWeight = weightList[2]
-    self.PacmanHunterWeight = weightList[3]
-    self.PreventingWeight = weightList[4]
-    self.EatingGhost = weightList[5]
-    self.RunningGhost = weightList[6]
-    self.CapsuleWeight = weightList[7]
-    self.CountDownWeight = weightList[8]
-    self.BorderWeight = weightList[9]
-    self.PathesWeight = weightList[10]
-    self.SeperationWeight = weightList[11]
+    self.FoodHuntingWeight = weightList[0]
+    self.ScoreWeight = weightList[1]
+    self.PacmanHunterWeight = weightList[2]
+    self.PreventingWeight = weightList[3]
+    self.EatingGhost = weightList[4]
+    self.RunningGhost = weightList[5]
+    self.CapsuleWeight = weightList[6]
+    self.CountDownWeight = weightList[7]
+    self.BorderWeight = weightList[8]
+    self.PathesWeight = weightList[9]
+    self.SeperationWeight = weightList[10]
       
       
       
@@ -139,7 +139,7 @@ class GeneticAgent(CaptureAgent):
       actions = gameState.getLegalActions(self.index)
       if actions:
           max = actions[0] 
-          maxVal = self.evaluateActions(actions[0], gameState)
+          maxVal = self.evaluateAction(actions[0], gameState)
           for a in actions: 
               currentVal = self.evaluateAction(a, gameState)
               if  currentVal > maxVal: 
@@ -149,12 +149,12 @@ class GeneticAgent(CaptureAgent):
       return 
 
   def evaluateAction(self, action, gameState):
-      successor = gameState.getSuccessorState(self.index, action)
+      successor = gameState.generateSuccessor(self.index, action)
       #score calculations
       score = successor.getScore()
       if self.red: 
           sum = score * self.ScoreWeight
-      else 
+      else:
           sum = -score * self.ScoreWeight
       #food calculations
       newFood = self.getFood(successor)
@@ -174,17 +174,9 @@ class GeneticAgent(CaptureAgent):
       #capsule calculations
       count = 0 
       newCapsules = self.getCapsules(successor) 
-      cspots = []
       capsuleDistances = []
-      for c in newCapsules:
-          a = 0
-          for cc in c: 
-              if newCapsules[count][a]:
-                   spots.append((count,a))
-              a = a + 1
-          count = count + 1
-      sucPos=successor.getAgent(self.index).getPostion()
-      for s in cspots: 
+      sucPos=successor.getAgentPosition(self.index)
+      for s in newCapsules: 
           capsuleDistances.append(self.getMazeDistance(sucPos, s))
       sum = sum + (10/(min(capsuleDistances))) *self.CapsuleWeight
       #food defending calculations
@@ -202,12 +194,12 @@ class GeneticAgent(CaptureAgent):
         count = count + 1
       enFoodCount=len(tspots)
       sum = sum + (enFoodCount * self.CountDownWeight)
+      tempSpots=[]
       for x in en:
-        tempSpots=[]
         enemyDistances.append(self.getMazeDistance(sucPos,successor.getAgentPosition(x)))
         for z in tspots:
           tempSpots.append(self.getMazeDistance(z, successor.getAgentPosition(x)))
-        tspots.append(min(tempspots))
+        tspots.append(min(tempSpots))
       enemyDistToDot=min(tspots)
       sum = sum + enemyDistToDot * self.PreventingWeight
       #seperation calculations
@@ -215,7 +207,7 @@ class GeneticAgent(CaptureAgent):
       teamDistance=self.getMazeDistance(successor.getAgentPosition(team[0]),successor.getAgentPosition(team[1]))
       sum = sum + teamDistance
       #pathes calculation
-      numMoves=len(successor(getLegalActions(self.index)))
+      numMoves=len(successor(self.getLegalActions(self.index)))
       sum = sum + numMoves * self.PathesWeight
       #fleeing and attacking ghosts
       minEnemyDistance = min(enemyDistances)
@@ -225,7 +217,7 @@ class GeneticAgent(CaptureAgent):
       
       if successor.agentStates[opponents[0].index].scaredTimer != 0 or successor.agentStates[opponents[1].index].scaredTimer != 0: 
         attack = 10/minEnemyDistance
-      else 
+      else:
         flee = minEnemyDistance
       sum = sum + (attack * self.EatingGhost) + (flee * self.RuningGhost)
       #border calculations  
@@ -300,7 +292,8 @@ for i in range(0,population):
     genes.append((0,randGene(),`i`))
 
 def compete(gene1,gene2):
-    return random.random()<.5
+    #return evalGame(gene1,gene2)
+    return 0
 
 def Genetic_Algorithm(genes):
     population = len(genes)
@@ -351,13 +344,13 @@ def Genetic_Algorithm(genes):
                 break
     return genes
 
-for i in range(0,population):
-    print(genes[i][2])
-genes = Genetic_Algorithm(genes)
-print("")
-for i in range(0,population):
-    print(genes[i][2])
-genes = Genetic_Algorithm(genes)
-print("")
-for i in range(0,population):
-    print(genes[i][2])
+#for i in range(0,population):
+#    print(genes[i][2])
+#genes = Genetic_Algorithm(genes)
+#print("")
+#for i in range(0,population):
+#    print(genes[i][2])
+#genes = Genetic_Algorithm(genes)
+#print("")
+#for i in range(0,population):
+#    print(genes[i][2])
