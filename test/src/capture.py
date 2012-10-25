@@ -820,7 +820,7 @@ def evalGame(value1, value2):
         import textDisplay
         gameDisplay = textDisplay.NullGraphics()
         rules.quiet = True#options['length']
-        g = rules.newGame( options['layout'], agents, options['display'], 200, False, False )
+        g = rules.newGame( options['layout'], agents, options['display'], 1200, False, False )
         g.run()
         if g.state.getRedFood().count() == MIN_FOOD:
             return 0

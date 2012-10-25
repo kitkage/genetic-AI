@@ -137,21 +137,25 @@ class GeneticAgent(CaptureAgent):
       
       
       actions = gameState.getLegalActions(self.index)
+      actions.remove(Directions.STOP)
       if actions:
           max = actions[0] 
           maxVal = self.evaluateAction(actions[0], gameState)
           for a in actions: 
               currentVal = self.evaluateAction(a, gameState)
+              print("max value is: ", maxVal)
+              print("current value is: ")
               if  currentVal > maxVal: 
                   maxVal = currentVal
                   max = a
-          return a
+          return max
       return 
 
   def evaluateAction(self, action, gameState):
       successor = gameState.generateSuccessor(self.index, action)
       #score calculations
       score = successor.getScore()
+      print("score :", score)
       if self.red: 
           sum = score * self.ScoreWeight
       else:
@@ -170,7 +174,8 @@ class GeneticAgent(CaptureAgent):
         count = count + 1
       for s in spots: 
           foodDistances.append(self.getMazeDistance(successor.getAgentState(self.index).getPosition(), s))
-      sum = sum + (10/(min(foodDistances))) * self.FoodHuntingWeight
+      print("min food distance is: ", min(foodDistances))
+      sum = sum - (min(foodDistances)) * self.FoodHuntingWeight
       #capsule calculations
       count = 0 
       newCapsules = self.getCapsules(successor) 
@@ -178,7 +183,8 @@ class GeneticAgent(CaptureAgent):
       sucPos=successor.getAgentPosition(self.index)
       for s in newCapsules: 
           capsuleDistances.append(self.getMazeDistance(sucPos, s))
-      sum = sum + (10/(min(capsuleDistances))) *self.CapsuleWeight
+      if capsuleDistances:
+          sum = sum - (min(capsuleDistances)) *self.CapsuleWeight
       #food defending calculations
       enemyDistances=[]
       en=self.getOpponents(successor)
@@ -193,17 +199,20 @@ class GeneticAgent(CaptureAgent):
             c = c + 1
         count = count + 1
       enFoodCount=len(tspots)
-      sum = sum + (enFoodCount * self.CountDownWeight)
+      print("enFoodCount is: ", enFoodCount)
+      sum = sum - (enFoodCount * self.CountDownWeight)
       tempSpots=[]
       for x in en:
         enemyDistances.append(self.getMazeDistance(sucPos,successor.getAgentPosition(x)))
         for z in tspots:
           tempSpots.append(self.getMazeDistance(z, successor.getAgentPosition(x)))
       enemyDistToDot=min(tempSpots)
+      print("EnemyDistToDot ", enemyDistToDot)
       sum = sum + enemyDistToDot * self.PreventingWeight
       #seperation calculations
       team=self.getTeam(gameState)
       teamDistance=self.getMazeDistance(successor.getAgentPosition(team[0]),successor.getAgentPosition(team[1]))
+      print("TeamDistance is: ", teamDistance)
       sum = sum + teamDistance
       #pathes calculation
       numMoves=len(successor.getLegalActions(self.index))
@@ -215,23 +224,26 @@ class GeneticAgent(CaptureAgent):
       opponents = self.getOpponents(successor)
       
       if successor.getAgentState(opponents[0]).scaredTimer != 0 or successor.getAgentState(opponents[1]).scaredTimer != 0: 
-        attack = 10/minEnemyDistance
-      else:
+        attack = minEnemyDistance
+      elif successor.getAgentState(self.index).isPacman:
         flee = minEnemyDistance
-      sum = sum + (attack * self.EatingGhost) + (flee * self.RunningGhost)
+      print("attack is: ", attack, " flee is: ", flee)
+      sum = sum + (attack * self.EatingGhost) - (flee * self.RunningGhost)
       #border calculations  
       borderDist=abs(sucPos[0]-len(successor.getWalls()[0])/2)
-      sum = sum + borderDist * self.BorderWeight
+      #sum = sum + borderDist * self.BorderWeight
       op1d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[0]))
       op2d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[1])) 
       if  op1d > op2d :
           if successor.getAgentState(opponents[1]).isPacman:
-              sum = sum + 10/(op1d * self.PacmanHunterWeight)
+              print("op1d is: ", op1d)
+              sum = sum  - (op1d * self.PacmanHunterWeight)
       else: 
           if successor.getAgentState(opponents[0]).isPacman: 
-              sum = sum + 10/(op2d * self.PacmanHunterWeight)
-          
-      
+              sum = sum - (op2d * self.PacmanHunterWeight)
+              print("op2d is: ", op2d)
+      print("sum is: ", sum)
+      return sum
           
         
         
