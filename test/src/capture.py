@@ -5,6 +5,7 @@
 # purposes. The Pacman AI projects were developed at UC Berkeley, primarily by
 # John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
+from baselineTeam import DefensiveReflexAgent, OffensiveReflexAgent
 
 """
 Capture.py holds the logic for Pacman capture the flag.
@@ -815,6 +816,8 @@ def runGames( layout, agents, display, length, numGames, record, numTraining, re
 
 def evalGame(value1, value2,display):
         """first value is red"""
+        #value2 = [0.0020411299229444496, 0.005905575938833599, 0.03566795869729389, 0.05777155699043593, 0.11918689663959615, 0.17219955847603657, 0.0005020373604024941, 0.0005864789816226922, 0.00018953404735489913, 0.004890404560273808, 0.001846138094062659, 0.0008995799399871566, 0.044730023830092655, 0.17540973730389617, 0.08369432657312995, 0.012319235935014695, 0.07790746678514437, 0.036510412017216394, 0.0020365079241264315, 0.0013310425810684173, 0.10214535867752587, 0.062229038723940686]
+        #agents=[OffensiveReflexAgent(0),GeneticAgent(1,0.1,value2[0:11]),DefensiveReflexAgent(2),GeneticAgent(3,0.1,value2[11:22])]
         agents=[GeneticAgent(0,0.1,value1[0:11]),GeneticAgent(1,0.1,value2[0:11]),GeneticAgent(2,0.1,value1[11:22]),GeneticAgent(3,0.1,value2[11:22])]
         rules = CaptureRules()
         import textDisplay
@@ -909,7 +912,7 @@ for i in range(0,population):
 def compete(gene1,gene2,display):
     return evalGame(gene1,gene2,display)
 
-def Genetic_Algorithm(genes,display):
+def Genetic_Algorithm(genes):
     population = len(genes)
     random.shuffle(genes)
     for competition in range(0,population/2):
@@ -923,6 +926,7 @@ def Genetic_Algorithm(genes,display):
                 if i!=competition and not genes[i][0]:
                     genes[i] = (0,)+genes[population-competition-1][1:]
                     break
+    print("Round 1 over")
     genes = genes[0:population/2]
     for competition in range(0,population/4):
         winner = compete(genes[competition][1],genes[population/2-competition-1][1],display)
@@ -935,6 +939,7 @@ def Genetic_Algorithm(genes,display):
                 if i!=competition and not genes[i][0]:
                     genes[i] = (0,)+genes[population/2-competition-1][1:]
                     break
+    print("Round 2 over")
     genes = genes[0:population/4]
     for competition in range(0,population/8):
         winner = compete(genes[competition][1],genes[population/4-competition-1][1],display)
@@ -958,10 +963,40 @@ def Genetic_Algorithm(genes,display):
                 break
     return genes
 
+def printWeights(gene):
+    print("Food Hunting: \t"+`gene[0]`)
+    print("Score: \t\t"+`gene[1]`)
+    print("Pacman Hunting: "+`gene[2]`)
+    print("Preventing: \t"+`gene[3]`)
+    print("Eating Ghosts: \t"+ `gene[4]`)
+    print("Running: \t"+`gene[5]`)
+    print("Capsule: \t"+`gene[6]`)
+    print("Countdown: \t"+`gene[7]`)
+    print("Border: \t"+`gene[8]`)
+    print("Paths: \t\t"+`gene[9]`)
+    print("Separation: \t"+`gene[10]`)
+
 maxwins = 0
 generation = 0
+import thread
+def keypress():
+    global display
+    display = False
+    while True:
+        char = sys.stdin.read(1)
+        if char=='1':
+            display = True
+        elif char=='0':
+            display = False
+thread.start_new(keypress,())
+display = True
 while maxwins<10:
-    genes = Genetic_Algorithm(genes,generation>10)
+    genes = Genetic_Algorithm(genes)
     maxwins = max(genes[0][3],max(genes[1][3],max(genes[2][3],genes[3][3])))
-    print(maxwins)
+    print("Oldest Competitor: "+`maxwins`)
+    print(genes[0])
+    printWeights(genes[0][1])
+    print(genes[1])
+    printWeights(genes[1][1])
     generation+=1
+

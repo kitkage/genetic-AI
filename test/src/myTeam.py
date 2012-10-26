@@ -10,6 +10,7 @@ from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
 import game
+from test.pickletester import MyStr
 
 #################
 # Team creation #
@@ -155,13 +156,14 @@ class GeneticAgent(CaptureAgent):
       successor = gameState.generateSuccessor(self.index, action)
       #score calculations
       score = successor.getScore()
+      sum = 0;
       #print("score :", score)
       if self.red: 
           sum = score * self.ScoreWeight *10
       else:
           sum = -score * self.ScoreWeight * 10
       #food calculations
-      newFood = self.getFood(successor)
+      newFood = self.getFood(gameState)
       spots = []
       foodDistances = []
       count = 0
@@ -178,7 +180,7 @@ class GeneticAgent(CaptureAgent):
       sum = sum - (min(foodDistances)) * self.FoodHuntingWeight
       #capsule calculations
       count = 0 
-      newCapsules = self.getCapsules(successor) 
+      newCapsules = self.getCapsules(gameState) 
       capsuleDistances = []
       sucPos=successor.getAgentPosition(self.index)
       for s in newCapsules: 
@@ -186,10 +188,9 @@ class GeneticAgent(CaptureAgent):
       if capsuleDistances:
           sum = sum - (min(capsuleDistances)) *self.CapsuleWeight
       #food defending calculations
-      enemyDistances=[]
-      en=self.getOpponents(successor)
+      en=self.getOpponents(gameState)
       tspots=[]
-      tfood=self.getFoodYouAreDefending(successor)
+      tfood=self.getFood(successor)
       count=0
       for f in tfood:
         c = 0
@@ -201,53 +202,175 @@ class GeneticAgent(CaptureAgent):
       enFoodCount=len(tspots)
       #print("enFoodCount is: ", enFoodCount)
       sum = sum - (enFoodCount * self.CountDownWeight)
-      tempSpots=[]
+      enemyClosest = []
       for x in en:
-        enemyDistances.append(self.getMazeDistance(sucPos,successor.getAgentPosition(x)))
+        tempSpots=[]
         for z in tspots:
-          tempSpots.append(self.getMazeDistance(z, successor.getAgentPosition(x)))
-      enemyDistToDot=min(tempSpots)
+          tempSpots.append((self.getMazeDistance(z, gameState.getAgentPosition(x)),z))
+        enemyClosest.append(self.getMazeDistance(min(tempSpots)[1],successor.getAgentPosition(self.index)))
+      enemyDistToDot=min(enemyClosest)
       #print("EnemyDistToDot ", enemyDistToDot)
-      sum = sum + enemyDistToDot * self.PreventingWeight
+      sum = sum - enemyDistToDot * self.PreventingWeight
       #seperation calculations
       team=self.getTeam(gameState)
       teamDistance=self.getMazeDistance(successor.getAgentPosition(team[0]),successor.getAgentPosition(team[1]))
       #print("TeamDistance is: ", teamDistance)
-      sum = sum + teamDistance
+      sum = sum + teamDistance*self.SeperationWeight
       #pathes calculation
       numMoves=len(successor.getLegalActions(self.index))
+      if successor.getAgentPosition(self.index) in self.getFood(gameState).asList():
+          numMoves = 5
       sum = sum + numMoves * self.PathesWeight
       #fleeing and attacking ghosts
-      minEnemyDistance = min(enemyDistances)
-      attack = 0
-      flee = 0
-      opponents = self.getOpponents(successor)
+      attack = successor.getWalls().width+successor.getWalls().height
+      flee = 5
+      opponents = self.getOpponents(gameState)
+      myState = successor.getAgentState(self.index)
+      for opponent in opponents:
+          opponentState = gameState.getAgentState(opponent)
+          if ((myState.isPacman or myState.scaredTimer==0) and (opponentState.isPacman or opponentState.scaredTimer!=0)) or ((not opponentState.isPacman) and opponentState.scaredTimer!=0):
+              attack = min(attack,self.getMazeDistance(successor.getAgentPosition(self.index),gameState.getAgentPosition(opponent)))
+          if ((not myState.isPacman) and myState.scaredTimer!=0) or (myState.isPacman and (not opponentState.isPacman) and opponentState.scaredTimer==0):
+              flee = min(flee,self.getMazeDistance(successor.getAgentPosition(self.index), gameState.getAgentPosition(opponent)))
       
-      if successor.getAgentState(opponents[0]).scaredTimer != 0 or successor.getAgentState(opponents[1]).scaredTimer != 0: 
-        attack = minEnemyDistance
-      elif successor.getAgentState(self.index).isPacman:
-        flee = minEnemyDistance
       #print("attack is: ", attack, " flee is: ", flee)
       sum = sum - (attack * self.EatingGhost) + (flee * self.RunningGhost)
       #border calculations  
-      borderDist=abs(sucPos[0]-len(successor.getWalls()[0])/2)
-      #sum = sum + borderDist * self.BorderWeight
+      borderDist=abs(sucPos[0]-(successor.getWalls().width/2-.5))
+      sum = sum - borderDist * self.BorderWeight
       op1d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[0]))
       op2d = self.getMazeDistance(successor.getAgentPosition(self.index), successor.getAgentPosition(opponents[1])) 
-      if  op1d > op2d :
-          if successor.getAgentState(opponents[1]).isPacman:
-              #print("op1d is: ", op1d)
-              if successor.getAgentState(self.index).isPacman:
-                  sum = sum  - (op1d * self.PacmanHunterWeight)
-      else: 
-          if successor.getAgentState(opponents[0]).isPacman: 
-              if successor.getAgentState(self.index).isPacman:
-                  sum = sum - (op2d * self.PacmanHunterWeight)
+#      if  op1d > op2d :
+#          if successor.getAgentState(opponents[1]).isPacman:
+#              #print("op1d is: ", op1d)
+#              if successor.getAgentState(self.index).isPacman:
+#                  sum = sum  - (op1d * self.PacmanHunterWeight)
+#      else: 
+#          if successor.getAgentState(opponents[0]).isPacman: 
+#              if successor.getAgentState(self.index).isPacman:
+#                  sum = sum - (op2d * self.PacmanHunterWeight)
               #print("op2d is: ", op2d)
-      #print("sum is: ", sum)
+#      print("sum is: ", sum)
       return sum
           
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class AlphaBetaAgent(CaptureAgent):
+  """
+    Your minimax agent with alpha-beta pruning (question 3)
+  """
+  def __init__(self,index):
+    # Agent index for querying state
+    self.index = index
+
+    # Whether or not you're on the red team
+    self.red = None
+
+    # Agent objects controlling you and your teammates
+    self.agentsOnTeam = None
+
+    # Maze distance calculator
+    self.distancer = None
+
+    # A history of observations
+    self.observationHistory = []
+
+    # Time to spend each turn on computing maze distances
+#    self.timeForComputing = timeForComputing
+
+    # Access to the graphics
+    self.display = None
+
+  def chooseAction(self, gameState):
+    """
+      Returns the minimax action using self.depth and self.evaluationFunction
+    """
+    "*** YOUR CODE HERE ***"
+    
+    x = self.process(gameState,self.index,2,(1,0,Directions.STOP),(-1,0,Directions.STOP))
+    return x[1]
+
+  def process(self,state,agentIndex,ply,minimum,maximum):
+    if ply==0 and agentIndex == self.index:
+        return (self.evaluationFunction(state,agentIndex),Directions.STOP)
+    if agentIndex == state.getNumAgents():
+        return self.process(state, 0, ply-1,minimum,maximum)
+    if agentIndex%2 == 0:
+        current = (-1,0,Directions.STOP)
+    else:
+        current = (1,0,Directions.STOP)
+    for action in state.getLegalActions(agentIndex):
+        if agentIndex%2 == 0:
+            current = max(current,(0,self.process(state.generateSuccessor(agentIndex,action), agentIndex+1, ply, minimum, max(current,maximum))[0],action))
+            if current>minimum:
+                break
+        else:
+            current = min(current,(0,self.process(state.generateSuccessor(agentIndex,action), agentIndex+1, ply, min(current,minimum), maximum)[0],action))
+            if current<maximum:
+                break
+    if current[0]!=0:
+        return (self.evaluationFunction(state,agentIndex),Directions.STOP)
+    return (current[1],current[2])
+
+  def evaluationFunction(self,currentGameState,agentIndex):
+    """
+    Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
+    evaluation function (question 5).
+
+    DESCRIPTION: <write something here so we know what you did>
+    """
+    "*** YOUR CODE HERE ***"
+    Pos = currentGameState.getAgentPosition(agentIndex)
+    Food = self.getFood(currentGameState)
+    opponents = self.getOpponents(currentGameState)
+    
+#    if newPos[0]>=8 and newPos[0]<=11 and newPos[0] == 5:
+#        return 0
+    
+    for opponent in opponents:
+        ghostPos = currentGameState.getAgentPosition(opponent)
+        if (self.getMazeDistance(Pos,ghostPos)<=1) and currentGameState.getAgentState(opponent).scaredTimer==0:
+            return -99999999
+    minFoodDist = (1,0)
+    for food in Food.asList():
+        minFoodDist = min(minFoodDist,(0,self.getMazeDistance(food, Pos)))
+    return currentGameState.getScore()*100-minFoodDist[1]-200*len(currentGameState.getCapsules())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         
 geneLength = 22
